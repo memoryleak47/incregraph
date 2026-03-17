@@ -27,8 +27,8 @@ class AppliedPId:
 class PVar: # aka 'Slot'
     var_i: int
 
-type PNode = App # which recurses via AppliedPId|PVar
-type PTerm = App # which recurses via PTerm
+type PNode = PVar|App # which recurses via AppliedPId
+type PTerm = PVar|App # which recurses via PTerm
 # PTerm is typically called "Pattern"
 
 @dataclass(frozen=True)

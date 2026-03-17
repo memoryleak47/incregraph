@@ -26,26 +26,30 @@ class PGraph:
             self.hashcons[sh] = pid
         return AppliedPId(self.hashcons[sh], args)
         
-    def add_term(self, t: PTerm) -> AppliedPId:
-        pass
+    def add_pterm(self, t: PTerm) -> AppliedPId:
+        if isinstance(t, Node):
+            args = tuple(map(self.add_pterm, args))
+            t = Node(t.f, args)
+        return self.add_pnode(t)
 
     def add_rule(self, rule: Rule):
-        app_pid = self.add_term(self.lhs)
-        renamed = rename(rule.rhs, app_pid.args)
+        app_pid = self.add_pterm(self.lhs)
+        f = lambda x: PVar(app_pid.args.index(x))
+        renamed = rename_pterm(rule.rhs, f)
         self.classes[app_pid.pid].reactors.append(renamed)
 
-def rename(x, f: Fn[PVar, PVar]):
+def rename_pterm(x: PTerm, f: Fn[PVar, PVar]):
     if isinstance(x, PVar):
         return f(x)
-    if isinstance(x, AppliedPId):
-        args = tuple(map(lambda x: rename(x, f), x.args))
-        return AppliedPId(x.pid, args)
     if isinstance(x, App):
-        args = tuple(map(lambda x: rename(x, f), x.args))
+        args = tuple(map(lambda x: rename_pterm(x, f), x.args))
         return App(x.f, args)
     assert(False)
 
 def shape(pnode: PNode) -> (Shape, tuple[PVar]):
+    if isinstance(pnode, PVar):
+        return (PVar(0), (pnode,))
+
     d = dict() # PVar "input" -> PVar "shape"
     def zip_d(t):
         out = []
