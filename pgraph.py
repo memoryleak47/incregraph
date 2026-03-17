@@ -70,13 +70,10 @@ def shape(pnode: PNode) -> (Shape, tuple[PVar]):
 
     new_args = []
     for a in pnode.args:
-        if isinstance(a, PVar):
-            new_args.append(zip_d((a,))[0])
-        else:
-            assert(isinstance(a, AppliedPId))
-            new_args.append(
-                AppliedPId(a.pid, zip_d(a.args))
-            )
+        assert(isinstance(a, AppliedPId))
+        new_args.append(
+            AppliedPId(a.pid, zip_d(a.args))
+        )
     shape = App(pnode.f, tuple(new_args))
 
     l = sorted(d.items(), key=lambda x: x[1].var_i)

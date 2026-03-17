@@ -38,6 +38,12 @@ class AppliedPId:
     pid: PId
     args: tuple[PVar]
 
+    def __post_init__(self):
+        assert(isinstance(self.pid, PId))
+        assert(isinstance(self.args, tuple))
+        for a in self.args:
+            assert(isinstance(a, PVar))
+
     def __repr__(self):
         if len(self.args) > 0:
             return str(self.pid) + "(" + ", ".join(map(str, self.args)) + ")"
