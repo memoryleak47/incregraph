@@ -13,8 +13,11 @@ class EGraph:
         self.hashcons = {} # Node -> Id
         self.uf = {} # Id -> Id
 
+    def canon_node(self, n: Node) -> Node:
+        return Node(n.f, tuple(map(self.find, n.args)))
+
     def add_node(self, n: Node):
-        n = Node(n.f, tuple(map(self.find, n.args)))
+        n = self.canon_node(n)
         if n not in self.hashcons:
             i = Id(len(self.classes))
             self.classes[i] = Class()
@@ -36,4 +39,16 @@ class EGraph:
         self.rebuild()
 
     def rebuild(self):
-        ...
+        dirty = True
+        while dirty:
+            hashcons = {}
+            dirty = False
+            for (n, x) in self.hashcons.items():
+                n = self.canon_node(n)
+                x = self.find(x)
+                if n in hashcons:
+                    self.union(hashcons[n], x)
+                    dirty = True
+                else:
+                    hashcons[n] = x
+            self.hashcons = hashcons
