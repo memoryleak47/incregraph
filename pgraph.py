@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from types import *
+from btypes import *
 
 # This effectively is a slotted hashcons.
 
@@ -9,6 +9,9 @@ class PClass:
     def __init__(self, sh: Shape):
         self.sh = sh
         self.reactors = [] # : list[PTerm], applicable rules from here
+
+    def __repr__(self):
+        return f"PClass(sh={self.sh}, reactors={self.reactors})"
 
 class PGraph:
     def __init__(self, rules: list[Rule]):
@@ -22,21 +25,27 @@ class PGraph:
         (sh, args) = shape(pnode)
         if sh not in self.hashcons:
             pid = PId(len(self.pclasses))
-            self.pclasses[pid] = Class(sh)
+            self.pclasses[pid] = PClass(sh)
             self.hashcons[sh] = pid
         return AppliedPId(self.hashcons[sh], args)
         
     def add_pterm(self, t: PTerm) -> AppliedPId:
-        if isinstance(t, Node):
-            args = tuple(map(self.add_pterm, args))
-            t = Node(t.f, args)
+        if isinstance(t, App):
+            args = tuple(map(self.add_pterm, t.args))
+            t = App(t.f, args)
         return self.add_pnode(t)
 
     def add_rule(self, rule: Rule):
-        app_pid = self.add_pterm(self.lhs)
+        app_pid = self.add_pterm(rule.lhs)
         f = lambda x: PVar(app_pid.args.index(x))
         renamed = rename_pterm(rule.rhs, f)
-        self.classes[app_pid.pid].reactors.append(renamed)
+        self.pclasses[app_pid.pid].reactors.append(renamed)
+
+    def dump(self):
+        for (lhs, rhs) in self.hashcons.items():
+            c = self.pclasses[rhs]
+            print(f"{lhs} -> {rhs}\n\tshape={c.sh}\n\treactors={c.reactors}")
+            
 
 def rename_pterm(x: PTerm, f: Fn[PVar, PVar]):
     if isinstance(x, PVar):
@@ -68,11 +77,9 @@ def shape(pnode: PNode) -> (Shape, tuple[PVar]):
             new_args.append(
                 AppliedPId(a.pid, zip_d(a.args))
             )
-    shape = PNode(pnode.f, new_args)
+    shape = App(pnode.f, tuple(new_args))
 
-    args = []
-    for (v, pos) in d.items():
-        args[pos] = v
-    args = tuple(args)
+    l = sorted(d.items(), key=lambda x: x[1].var_i)
+    args = tuple(x[0] for x in l)
     
     return shape, args
