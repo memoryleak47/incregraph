@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 from pgraph import *
 
+# every PVar is a number from 0..n, so we can express a subst via a list.
+type Subst = tuple[Id]
+
 class Class:
     def __init__(self):
-        pass
+        self.matches = {} # PId -> list[Subst]
 
 class EGraph:
     def __init__(self, rules: list[Rule]):
