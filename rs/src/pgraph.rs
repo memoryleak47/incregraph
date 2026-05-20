@@ -35,6 +35,8 @@ pub struct PClass {
 
 #[derive(Debug)]
 pub struct PGraph {
+    // note that PIds default invocation (i.e. [0, 1, 2, ...]) always corresponds to the shape computed PNode.
+
     // never index with 0!
     pub pmap: Vec</*PId -> */ PClass>,
 }
@@ -65,7 +67,7 @@ impl PGraph {
                 let (pnode, m) = canon_node(pnode);
 
                 if let Some(i) = self.pmap.iter().position(|c| c.node == pnode) {
-                    return (i, todo!())
+                    return (i, m)
                 } else {
                     let i = self.pmap.len();
                     self.pmap.push(PClass {
