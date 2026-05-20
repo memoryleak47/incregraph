@@ -11,7 +11,7 @@ type PVar = usize;
 type Score = usize;
 type RhsId = usize;
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 struct Node(Symbol, Box<[Id]>);
 
 // PId 0 always means PVar. See args[0] for the var.
@@ -186,6 +186,18 @@ impl EGraph {
         let instantiated_rhs = self.instantiate_pattern(&rhs, &subst);
         self.union(instantiated_lhs, instantiated_rhs);
         self.rebuild();
+        self.rematch();
+    }
+
+    // TODO make more efficient, like rebuilding.
+    fn rematch(&mut self) {
+        loop {
+            let mut changed = false;
+            for (n, i) in self.hashcons.clone() {
+                if self.match_node(i, &n) { changed = true; }
+            }
+            if !changed { break }
+        }
     }
 }
 
