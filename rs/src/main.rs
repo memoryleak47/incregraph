@@ -109,8 +109,18 @@ impl EGraph {
         let (PatNode(f, args), _) = &self.pmap[pid];
         let f = *f;
         let args = args.clone();
-        // TODO fix
-        let args = args.iter().map(|(pid, args2)| self.instantiate_pid(*pid, args2)).collect();
+        let args = args.iter().map(|(pid2, args2)| {
+                let subst: &[Id] = subst;
+                let args: &[PVar] = args2;
+                // Example:
+                // We have subst = [id0, id1, id2]
+                // pid(0, 1, 2) = f(pid3(0, 1), pid2(2, 1))
+                //                                   ^
+                // Then args2 = [2, 1]               |  up here.
+                // Then we want args3 = [id2, id1]
+                let args3 = args2.iter().map(|x| subst[*x]).collect();
+                self.instantiate_pid(*pid2, &args3)
+            }).collect();
         self.add(Node(f, args))
     }
 
