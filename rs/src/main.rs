@@ -139,8 +139,6 @@ impl<'a> EGraph<'a> {
         if pid == 0 { return subst[0] }
 
         let (PatNode(f, args), _) = &self.pgraph.pmap[pid];
-        let f = *f;
-        let args = args.clone();
         let args = args.iter().map(|(pid2, args2)| {
                 let subst: &[Id] = subst;
                 let args: &[PVar] = args2;
@@ -153,13 +151,13 @@ impl<'a> EGraph<'a> {
                 let args3 = args2.iter().map(|x| subst[*x]).collect();
                 self.instantiate_pid(*pid2, &args3)
             }).collect();
-        self.add(Node(f, args))
+        self.add(Node(*f, args))
     }
 
     fn tick(&mut self) {
         let Some((_, (pid, rhs_id, subst))) = self.queue.pop() else { return };
         let (_, rhss) = &self.pgraph.pmap[pid];
-        let rhs = rhss[rhs_id].clone(); // TODO fix useless clone.
+        let rhs = &rhss[rhs_id];
         let instantiated_lhs = self.instantiate_pid(pid, &subst);
         let instantiated_rhs = self.instantiate_pattern(&rhs, &subst);
         self.union(instantiated_lhs, instantiated_rhs);
