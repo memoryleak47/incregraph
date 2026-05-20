@@ -1,53 +1,31 @@
 mod minqueue;
 pub use minqueue::*;
 
+mod pgraph;
+pub use pgraph::*;
+
 use symbol_table::GlobalSymbol as Symbol;
 use std::collections::HashMap;
 
 type Id = usize;
-type PId = usize;
 type Subst = Box<[Id]>;
-type PVar = usize;
 type Score = usize;
-type RhsId = usize;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 struct Node(Symbol, Box<[Id]>);
 
-// PId 0 always means PVar. See args[0] for the var.
-type AppliedPId = (PId, /*args*/ Box<[PVar]>);
-
-struct PatNode(Symbol, Box<[AppliedPId]>);
-
-fn varcount(args: &[AppliedPId]) -> PVar {
-    let mut vc = 0;
-    for (_, vs) in args {
-        for v in vs {
-            vc = vc.max(*v);
-        }
-    }
-    vc
-}
-
-#[derive(Clone)]
-enum Pattern {
-    PVar(PVar),
-    Node(Symbol, Box<[Pattern]>),
-}
-
-struct EGraph {
-    // never index this with PId = 0!
-    pmap: Vec</*PId -> */(PatNode, /*rhss: */Box<[Pattern]>)>,
+struct EGraph<'a> {
+    pgraph: &'a PGraph,
     matches: HashMap<(Id, PId), Vec<Subst>>,
     uf: Vec</*Id -> */Id>,
     hashcons: HashMap<Node, Id>,
     queue: MinPrioQueue<Score, (PId, RhsId, Subst)>,
 }
 
-impl EGraph {
-    fn new() -> Self {
+impl<'a> EGraph<'a> {
+    fn new(pgraph: &'a PGraph) -> Self {
         Self {
-            pmap: Default::default(),
+            pgraph,
             matches: Default::default(),
             uf: Default::default(),
             hashcons: Default::default(),
@@ -72,7 +50,7 @@ impl EGraph {
     // returns true, if "matches" was changed.
     fn match_node(&mut self, i: Id, Node(f, args): &Node) -> bool {
         let mut changed = false;
-        for (pid, (PatNode(pf, pargs), rhss)) in self.pmap.iter().enumerate() {
+        for (pid, (PatNode(pf, pargs), rhss)) in self.pgraph.pmap.iter().enumerate() {
             if pf != f { continue }
 
             let varcount = varcount(&pargs);
@@ -160,7 +138,7 @@ impl EGraph {
     fn instantiate_pid(&mut self, pid: PId, subst: &Subst) -> Id {
         if pid == 0 { return subst[0] }
 
-        let (PatNode(f, args), _) = &self.pmap[pid];
+        let (PatNode(f, args), _) = &self.pgraph.pmap[pid];
         let f = *f;
         let args = args.clone();
         let args = args.iter().map(|(pid2, args2)| {
@@ -180,7 +158,7 @@ impl EGraph {
 
     fn tick(&mut self) {
         let Some((_, (pid, rhs_id, subst))) = self.queue.pop() else { return };
-        let (_, rhss) = &self.pmap[pid];
+        let (_, rhss) = &self.pgraph.pmap[pid];
         let rhs = rhss[rhs_id].clone(); // TODO fix useless clone.
         let instantiated_lhs = self.instantiate_pid(pid, &subst);
         let instantiated_rhs = self.instantiate_pattern(&rhs, &subst);
