@@ -10,16 +10,6 @@ pub type AppliedPId = (PId, /*args*/ Box<[PVar]>);
 #[derive(PartialEq, Debug)]
 pub struct PatNode(pub Symbol, pub Box<[AppliedPId]>);
 
-pub fn varcount(args: &[AppliedPId]) -> PVar {
-    let mut vc = 0;
-    for (_, vs) in args {
-        for v in vs {
-            vc = vc.max(*v);
-        }
-    }
-    vc
-}
-
 #[derive(Clone, Debug)]
 pub enum Pattern {
     PVar(PVar),

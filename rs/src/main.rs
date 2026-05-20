@@ -56,9 +56,7 @@ impl<'a> EGraph<'a> {
             let PatNode(pf, pargs) = &c.node;
             if pf != f { continue }
 
-            let varcount = varcount(&pargs);
-
-            let init_subst = vec![Id::MAX; varcount].into_boxed_slice();
+            let init_subst = vec![Id::MAX; c.arity].into_boxed_slice();
             let mut substs = vec![init_subst];
             for i in 0..args.len() {
                 let (child_pid, child_pargs): &(PId, Box<[PVar]>) = &pargs[i];
