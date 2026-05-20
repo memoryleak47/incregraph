@@ -52,7 +52,8 @@ impl<'a> EGraph<'a> {
     // returns true, if "matches" was changed.
     fn match_node(&mut self, i: Id, Node(f, args): &Node) -> bool {
         let mut changed = false;
-        for (pid, (PatNode(pf, pargs), rhss)) in self.pgraph.pmap.iter().enumerate() {
+        for (pid, c) in self.pgraph.pmap.iter().enumerate() {
+            let PatNode(pf, pargs) = &c.node;
             if pf != f { continue }
 
             let varcount = varcount(&pargs);
@@ -80,7 +81,7 @@ impl<'a> EGraph<'a> {
             for subst in substs {
                 if !entry.contains(&subst) {
                     entry.push(subst.clone());
-                    for rhs_idx in 0..rhss.len() {
+                    for rhs_idx in 0..c.rhss.len() {
                         let score = 42;
                         self.queue.push(score, (pid, rhs_idx, subst.clone()));
                     }
@@ -140,7 +141,7 @@ impl<'a> EGraph<'a> {
     fn instantiate_pid(&mut self, pid: PId, subst: &Subst) -> Id {
         if pid == 0 { return subst[0] }
 
-        let (PatNode(f, args), _) = &self.pgraph.pmap[pid];
+        let PatNode(f, args) = &self.pgraph.pmap[pid].node;
         let args = args.iter().map(|(pid2, args2)| {
                 let subst: &[Id] = subst;
                 let args: &[PVar] = args2;
@@ -158,8 +159,7 @@ impl<'a> EGraph<'a> {
 
     fn tick(&mut self) {
         let Some((_, (pid, rhs_id, subst))) = self.queue.pop() else { return };
-        let (_, rhss) = &self.pgraph.pmap[pid];
-        let rhs = &rhss[rhs_id];
+        let rhs = &self.pgraph.pmap[pid].rhss[rhs_id];
         let instantiated_lhs = self.instantiate_pid(pid, &subst);
         let instantiated_rhs = self.instantiate_pattern(&rhs, &subst);
         self.union(instantiated_lhs, instantiated_rhs);

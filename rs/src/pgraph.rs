@@ -27,15 +27,24 @@ pub enum Pattern {
 }
 
 #[derive(Debug)]
+pub struct PClass {
+    pub node: PatNode,
+    pub rhss: Vec<Pattern>,
+}
+
+#[derive(Debug)]
 pub struct PGraph {
     // never index with 0!
-    pub pmap: Vec</*PId -> */(PatNode, /*rhss: */Vec<Pattern>)>,
+    pub pmap: Vec</*PId -> */ PClass>,
 }
 
 impl PGraph {
     pub fn new() -> Self {
         let var_pnode = PatNode(Symbol::new("var--never-use"), Box::new([]));
-        let var_pclass = (var_pnode, Vec::new());
+        let var_pclass = PClass {
+            node: var_pnode,
+            rhss: Vec::new(),
+        };
         Self {
             pmap: vec![var_pclass],
         }
@@ -43,7 +52,7 @@ impl PGraph {
 
     pub fn add_rule(&mut self, lhs: Pattern, rhs: Pattern) {
         let (pid, pargs) = self.add_pattern(lhs);
-        self.pmap[pid].1.push(rhs.rename_rev(&pargs));
+        self.pmap[pid].rhss.push(rhs.rename_rev(&pargs));
     }
 
     pub fn add_pattern(&mut self, pat: Pattern) -> AppliedPId {
@@ -53,11 +62,14 @@ impl PGraph {
                 let pnode = PatNode(f, args.into_iter().map(|x| self.add_pattern(x)).collect());
                 let (pnode, m) = canon_node(pnode);
 
-                if let Some(i) = self.pmap.iter().position(|(pn, _)| *pn == pnode) {
+                if let Some(i) = self.pmap.iter().position(|c| c.node == pnode) {
                     return (i, todo!())
                 } else {
                     let i = self.pmap.len();
-                    self.pmap.push((pnode, Vec::new()));
+                    self.pmap.push(PClass {
+                        node: pnode,
+                        rhss: Vec::new()
+                    });
                     (i, m)
                 }
             },
