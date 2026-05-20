@@ -51,10 +51,33 @@ impl EGraph {
 
         let i = self.uf.len();
         self.uf.push(i);
-        self.hashcons.insert(n, i);
-        i
 
-        // TODO do matches here!
+        self.match_node(i, &n);
+
+        self.hashcons.insert(n, i);
+
+        i
+    }
+
+    // returns true, if "matches" was changed.
+    fn match_node(&mut self, i: Id, Node(f, args): &Node) -> bool {
+        let mut changed = false;
+        for (pid, (PatNode(pf, pargs), _)) in self.pmap.iter().enumerate() {
+            if pf != f { continue }
+
+            // something along those lines.
+            /*
+            for (m0, ..., mn) in cartesian(self.matches[(args[0], pargs[0].0)], ..., self.matches[(args[n], pargs[n].0)]) {
+                let (m0, ..., mn) = (op(m0, pargs[0].1), ..., op(mn, pargs[n].1));
+                if let Some(m) = join([m0, ..., mn]) {
+                    if new self.matches[(pid, i)].insert(m) {
+                        changed = true;
+                    }
+                }
+            }
+            */
+        }
+        changed
     }
 
     // You have to manually call rebuild after this!
@@ -73,6 +96,7 @@ impl EGraph {
 
     // This rebuild isn't good for incremental stuff! Its too big.
     // We need parent pointers.
+    // TODO should call "match_node" or something?
     fn rebuild(&mut self) {
         for (n, i) in std::mem::take(&mut self.hashcons) {
             let n = self.canon(n);
