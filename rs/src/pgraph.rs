@@ -30,6 +30,7 @@ pub enum Pattern {
 pub struct PClass {
     pub node: PatNode,
     pub rhss: Vec<Pattern>,
+    pub arity: usize,
 }
 
 #[derive(Debug)]
@@ -44,6 +45,7 @@ impl PGraph {
         let var_pclass = PClass {
             node: var_pnode,
             rhss: Vec::new(),
+            arity: 1,
         };
         Self {
             pmap: vec![var_pclass],
@@ -68,11 +70,23 @@ impl PGraph {
                     let i = self.pmap.len();
                     self.pmap.push(PClass {
                         node: pnode,
-                        rhss: Vec::new()
+                        rhss: Vec::new(),
+                        arity: m.len(),
                     });
                     (i, m)
                 }
             },
+        }
+    }
+
+    pub fn dump(&self) {
+        for (pid, c) in self.pmap.iter().enumerate().skip(1) {
+            let arg = (0..c.arity).map(|x| x.to_string()).collect::<Box<[_]>>();
+            let arg = arg.join(", ");
+            println!("pid{pid}[{arg}]: {:?}", c.node);
+            for r in &c.rhss {
+                println!("  {r:?}");
+            }
         }
     }
 }

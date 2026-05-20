@@ -26,6 +26,6 @@ fn test1() {
         zero()
     );
 
-    dbg!(pgraph);
+    pgraph.dump();
     assert!(false);
 }
