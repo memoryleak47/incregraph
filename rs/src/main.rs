@@ -72,7 +72,7 @@ impl EGraph {
     // returns true, if "matches" was changed.
     fn match_node(&mut self, i: Id, Node(f, args): &Node) -> bool {
         let mut changed = false;
-        for (pid, (PatNode(pf, pargs), _)) in self.pmap.iter().enumerate() {
+        for (pid, (PatNode(pf, pargs), rhss)) in self.pmap.iter().enumerate() {
             if pf != f { continue }
 
             let varcount = varcount(&pargs);
@@ -99,7 +99,11 @@ impl EGraph {
             let entry: &mut Vec<Subst> = self.matches.entry((i, pid)).or_insert(Vec::new());
             for subst in substs {
                 if !entry.contains(&subst) {
-                    entry.push(subst);
+                    entry.push(subst.clone());
+                    for rhs_idx in 0..rhss.len() {
+                        let score = 42;
+                        self.queue.push(score, (pid, rhs_idx, subst.clone()));
+                    }
                 }
             }
         }
