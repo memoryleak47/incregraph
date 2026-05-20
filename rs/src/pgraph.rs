@@ -7,6 +7,7 @@ pub type RhsId = usize;
 // PId 0 always means PVar. See args[0] for the var.
 pub type AppliedPId = (PId, /*args*/ Box<[PVar]>);
 
+#[derive(PartialEq)]
 pub struct PatNode(pub Symbol, pub Box<[AppliedPId]>);
 
 pub fn varcount(args: &[AppliedPId]) -> PVar {
@@ -32,8 +33,10 @@ pub struct PGraph {
 
 impl PGraph {
     pub fn new() -> Self {
+        let var_pnode = PatNode(Symbol::new("var--never-use"), Box::new([]));
+        let var_pclass = (var_pnode, Vec::new());
         Self {
-            pmap: Vec::new(), // TODO initial thing?
+            pmap: vec![var_pclass],
         }
     }
 
@@ -43,8 +46,41 @@ impl PGraph {
     }
 
     pub fn add_pattern(&mut self, pat: Pattern) -> AppliedPId {
-        todo!()
+        match pat {
+            Pattern::PVar(v) => (0, Box::new([v])),
+            Pattern::Node(f, args) => {
+                let pnode = PatNode(f, args.into_iter().map(|x| self.add_pattern(x)).collect());
+                let (pnode, m) = canon_node(pnode);
+
+                if let Some(i) = self.pmap.iter().position(|(pn, _)| *pn == pnode) {
+                    return (i, todo!())
+                } else {
+                    let i = self.pmap.len();
+                    self.pmap.push((pnode, Vec::new()));
+                    (i, m)
+                }
+            },
+        }
     }
+}
+
+fn canon_node(PatNode(f, args): PatNode) -> (PatNode, Box<[PVar]>) {
+    let mut ret = Vec::new();
+    let mut m = HashMap::new();
+    let mut outargs = Vec::new();
+    for (pid, pvars) in args {
+        let mut outpvars = Vec::new();
+        for v in pvars {
+            if !m.contains_key(&v) {
+                m.insert(v, m.len());
+                ret.push(v);
+            }
+            outpvars.push(m[&v]);
+        }
+        outargs.push((pid, outpvars.into()));
+    }
+    let n = PatNode(f, outargs.into());
+    (n, ret.into())
 }
 
 impl Pattern {
