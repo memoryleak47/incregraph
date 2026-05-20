@@ -78,6 +78,7 @@ impl<'a> EGraph<'a> {
             let entry: &mut Vec<Subst> = self.matches.entry((i, pid)).or_insert(Vec::new());
             for subst in substs {
                 if !entry.contains(&subst) {
+                    changed = true;
                     entry.push(subst.clone());
                     for rhs_idx in 0..c.rhss.len() {
                         let score = 42;
