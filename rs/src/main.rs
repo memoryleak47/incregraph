@@ -1,3 +1,6 @@
+mod minqueue;
+pub use minqueue::*;
+
 use symbol_table::GlobalSymbol as Symbol;
 use std::collections::HashMap;
 
@@ -6,6 +9,8 @@ type PId = usize;
 type AppliedPId = (PId, Box<[PVar]>);
 type Subst = Box<[Id]>;
 type PVar = usize;
+type Score = usize;
+type RuleId = usize;
 
 #[derive(PartialEq, Eq, Hash)]
 struct Node {
@@ -18,16 +23,24 @@ enum PatNode {
     Node(Symbol, Box<[AppliedPId]>),
 }
 
-#[derive(Default)]
 struct EGraph {
     pmap: Vec</*PId -> */PatNode>,
     matches: HashMap<(Id, PId), Vec<Subst>>,
     uf: Vec</*Id -> */Id>,
     hashcons: HashMap<Node, Id>,
+    queue: MinPrioQueue<Score, (RuleId, Subst)>,
 }
 
 impl EGraph {
-    fn new() -> Self { Default::default() }
+    fn new() -> Self {
+        Self {
+            pmap: Default::default(),
+            matches: Default::default(),
+            uf: Default::default(),
+            hashcons: Default::default(),
+            queue: MinPrioQueue::new(),
+        }
+    }
 
     fn add(&mut self, mut n: Node) -> Id {
         n.args = n.args.into_iter().map(|x| self.find(x)).collect();
@@ -37,6 +50,8 @@ impl EGraph {
         self.uf.push(i);
         self.hashcons.insert(n, i);
         i
+
+        // TODO do matches here!
     }
 
     fn find(&self, mut x: Id) -> Id {
@@ -46,8 +61,11 @@ impl EGraph {
             x = y;
         }
     }
+
+    fn tick(&mut self) {
+        let Some((_, (rule_id, subst))) = self.queue.pop() else { return };
+    }
 }
 
 fn main() {
-    println!("Hello, world!");
 }
