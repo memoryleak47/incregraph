@@ -39,10 +39,19 @@ impl PGraph {
 
     pub fn add_rule(&mut self, lhs: Pattern, rhs: Pattern) {
         let (pid, pargs) = self.add_pattern(lhs);
-        self.pmap[pid].1.push(rhs);
+        self.pmap[pid].1.push(rhs.rename_rev(&pargs));
     }
 
     pub fn add_pattern(&mut self, pat: Pattern) -> AppliedPId {
         todo!()
+    }
+}
+
+impl Pattern {
+    pub fn rename_rev(&self, m: &[PVar]) -> Pattern {
+        match self {
+            Pattern::PVar(v) => Pattern::PVar(m.iter().position(|x| *x == *v).unwrap()),
+            Pattern::Node(f, args) => Pattern::Node(*f, args.iter().map(|x| x.rename_rev(m)).collect())
+        }
     }
 }
