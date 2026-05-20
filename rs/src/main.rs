@@ -55,6 +55,18 @@ impl<'a> EGraph<'a> {
         self.add(Node(f, args))
     }
 
+    fn get_matches(&self, i: Id, pid: PId) -> Box<[Subst]> {
+        if pid == 0 {
+            return vec![vec![i].into()].into()
+        }
+
+        if let Some(x) = self.matches.get(&(i, pid)) {
+            x.clone().into()
+        } else {
+            Box::new([])
+        }
+    }
+
     // returns true, if "matches" was changed.
     fn match_node(&mut self, i: Id, Node(f, args): &Node) -> bool {
         let mut changed = false;
@@ -67,7 +79,7 @@ impl<'a> EGraph<'a> {
             for i in 0..args.len() {
                 let (child_pid, child_pargs): &(PId, Box<[PVar]>) = &pargs[i];
                 for subst in std::mem::take(&mut substs) {
-                    'l: for child_subst in &self.matches[&(args[i], *child_pid)] {
+                    'l: for child_subst in &self.get_matches(args[i], *child_pid) {
                         let mut subst = subst.clone();
                         for (a, v) in child_pargs.iter().zip(child_subst) {
                             if subst[*a] == *v || subst[*a] == Id::MAX {
