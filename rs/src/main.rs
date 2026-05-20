@@ -19,6 +19,16 @@ type AppliedPId = (PId, /*args*/ Box<[PVar]>);
 
 struct PatNode(Symbol, Box<[AppliedPId]>);
 
+fn varcount(args: &[AppliedPId]) -> PVar {
+    let mut vc = 0;
+    for (_, vs) in args {
+        for v in vs {
+            vc = vc.max(*v);
+        }
+    }
+    vc
+}
+
 #[derive(Clone)]
 enum Pattern {
     PVar(PVar),
@@ -65,17 +75,33 @@ impl EGraph {
         for (pid, (PatNode(pf, pargs), _)) in self.pmap.iter().enumerate() {
             if pf != f { continue }
 
-            // something along those lines.
-            /*
-            for (m0, ..., mn) in cartesian(self.matches[(args[0], pargs[0].0)], ..., self.matches[(args[n], pargs[n].0)]) {
-                let (m0, ..., mn) = (op(m0, pargs[0].1), ..., op(mn, pargs[n].1));
-                if let Some(m) = join([m0, ..., mn]) {
-                    if new self.matches[(pid, i)].insert(m) {
-                        changed = true;
+            let varcount = varcount(&pargs);
+
+            let init_subst = vec![Id::MAX; varcount].into_boxed_slice();
+            let mut substs = vec![init_subst];
+            for i in 0..args.len() {
+                let (child_pid, child_pargs): &(PId, Box<[PVar]>) = &pargs[i];
+                for subst in std::mem::take(&mut substs) {
+                    'l: for child_subst in &self.matches[&(args[i], *child_pid)] {
+                        let mut subst = subst.clone();
+                        for (a, v) in child_pargs.iter().zip(child_subst) {
+                            if subst[*a] == *v || subst[*a] == Id::MAX {
+                                subst[*a] = *v;
+                            } else {
+                                continue 'l;
+                            }
+                        }
+                        substs.push(subst);
                     }
                 }
             }
-            */
+
+            let entry: &mut Vec<Subst> = self.matches.entry((i, pid)).or_insert(Vec::new());
+            for subst in substs {
+                if !entry.contains(&subst) {
+                    entry.push(subst);
+                }
+            }
         }
         changed
     }
