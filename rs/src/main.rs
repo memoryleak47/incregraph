@@ -43,7 +43,7 @@ impl EGraph {
     }
 
     fn add(&mut self, mut n: Node) -> Id {
-        n.args = n.args.into_iter().map(|x| self.find(x)).collect();
+        let n = self.canon(n);
         if let Some(i) = self.hashcons.get(&n) { return *i }
 
         let i = self.uf.len();
@@ -52,6 +52,34 @@ impl EGraph {
         i
 
         // TODO do matches here!
+    }
+
+    // You have to manually call rebuild after this!
+    fn union(&mut self, x: Id, y: Id) {
+        let x = self.find(x);
+        let y = self.find(y);
+
+        if x == y { return }
+        self.uf[x] = y;
+    }
+
+    fn canon(&self, mut n: Node) -> Node {
+        n.args = n.args.into_iter().map(|x| self.find(x)).collect();
+        n
+    }
+
+    // This rebuild isn't good for incremental stuff! Its too big.
+    // We need parent pointers.
+    fn rebuild(&mut self) {
+        for (n, i) in std::mem::take(&mut self.hashcons) {
+            let n = self.canon(n);
+            let i = self.find(i);
+            if let Some(j) = self.hashcons.get(&n) {
+                self.union(i, *j);
+            } else {
+                self.hashcons.insert(n, i);
+            }
+        }
     }
 
     fn find(&self, mut x: Id) -> Id {
