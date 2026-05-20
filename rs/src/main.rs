@@ -14,8 +14,8 @@ type RhsId = usize;
 #[derive(PartialEq, Eq, Hash)]
 struct Node(Symbol, Box<[Id]>);
 
-// PId 0 always means PVar.
-type AppliedPId = (PId, Box<[PVar]>);
+// PId 0 always means PVar. See args[0] for the var.
+type AppliedPId = (PId, /*args*/ Box<[PVar]>);
 
 struct PatNode(Symbol, Box<[AppliedPId]>);
 
@@ -26,6 +26,7 @@ enum Pattern {
 }
 
 struct EGraph {
+    // never index this with PId = 0!
     pmap: Vec</*PId -> */(PatNode, /*rhss: */Box<[Pattern]>)>,
     matches: HashMap<(Id, PId), Vec<Subst>>,
     uf: Vec</*Id -> */Id>,
@@ -103,8 +104,14 @@ impl EGraph {
     }
 
     fn instantiate_pid(&mut self, pid: PId, subst: &Subst) -> Id {
-        let (node, _) = &self.pmap[pid];
-        todo!()
+        if pid == 0 { return subst[0] }
+
+        let (PatNode(f, args), _) = &self.pmap[pid];
+        let f = *f;
+        let args = args.clone();
+        // TODO fix
+        let args = args.iter().map(|(pid, args2)| self.instantiate_pid(*pid, args2)).collect();
+        self.add(Node(f, args))
     }
 
     fn tick(&mut self) {
