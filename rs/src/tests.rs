@@ -6,6 +6,7 @@ fn zero() -> Pattern { Pattern::Node(Symbol::new("zero"), Box::new([])) }
 fn one() -> Pattern { Pattern::Node(Symbol::new("one"), Box::new([])) }
 fn x() -> Pattern { Pattern::PVar(17) }
 fn y() -> Pattern { Pattern::PVar(42) }
+fn a() -> Pattern { Pattern::Node(Symbol::new("a"), Box::new([])) }
 
 #[test]
 fn test1() {
@@ -26,6 +27,18 @@ fn test1() {
         zero()
     );
 
-    pgraph.dump();
-    assert!(false);
+    pgraph.add_rule(
+        plus(x(), zero()),
+        x(),
+    );
+
+    let mut eg = EGraph::new(&pgraph);
+
+    let l = eg.add_term(plus(a(), neg(a())));
+    let r = eg.add_term(zero());
+
+    for _ in 0..10 {
+        eg.tick();
+    }
+    assert_eq!(eg.find(l), eg.find(r));
 }

@@ -49,6 +49,12 @@ impl<'a> EGraph<'a> {
         i
     }
 
+    fn add_term(&mut self, x: Pattern) -> Id {
+        let Pattern::Node(f, args) = x else { panic!() };
+        let args = args.into_iter().map(|x| self.add_term(x)).collect();
+        self.add(Node(f, args))
+    }
+
     // returns true, if "matches" was changed.
     fn match_node(&mut self, i: Id, Node(f, args): &Node) -> bool {
         let mut changed = false;
