@@ -4,6 +4,8 @@ pub use minqueue::*;
 mod pgraph;
 pub use pgraph::*;
 
+mod tests;
+
 use symbol_table::GlobalSymbol as Symbol;
 use std::collections::HashMap;
 

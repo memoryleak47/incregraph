@@ -7,7 +7,7 @@ pub type RhsId = usize;
 // PId 0 always means PVar. See args[0] for the var.
 pub type AppliedPId = (PId, /*args*/ Box<[PVar]>);
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct PatNode(pub Symbol, pub Box<[AppliedPId]>);
 
 pub fn varcount(args: &[AppliedPId]) -> PVar {
@@ -20,12 +20,13 @@ pub fn varcount(args: &[AppliedPId]) -> PVar {
     vc
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Pattern {
     PVar(PVar),
     Node(Symbol, Box<[Pattern]>),
 }
 
+#[derive(Debug)]
 pub struct PGraph {
     // never index with 0!
     pub pmap: Vec</*PId -> */(PatNode, /*rhss: */Vec<Pattern>)>,
